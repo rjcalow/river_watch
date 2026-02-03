@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>River Ryton – Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 12px; max-width: 600px; }
+    h1 { margin-top: 0; }
+    .station { margin-top: 16px; padding: 12px; border: 1px dashed #aaa; border-radius: 8px; }
+    .big { font-size: 28px; font-weight: bold; }
+    .muted { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>River Ryton API Test</h1>
+  <div id="status" class="muted">Loading…</div>
+  <div id="output"></div>
+</div>
+
+<script>
+async function loadRiverData() {
+  const status = document.getElementById("status");
+  const output = document.getElementById("output");
+
+  try {
+    const res = await fetch("/api/ryton");
+    if (!res.ok) throw new Error("API error " + res.status);
+
+    const data = await res.json();
+    status.textContent = "Live data loaded";
+
+    output.innerHTML = "";
+
+    for (const s of data.stations) {
+      const div = document.createElement("div");
+      div.className = "station";
+
+      const value = s.latest?.value ?? "—";
+      const time  = s.latest?.dateTime ?? "—";
+
+      div.innerHTML = `
+        <div class="big">${s.label}</div>
+        <div>Level: <strong>${value} m</strong></div>
+        <div class="muted">Updated: ${new Date(time).toLocaleString()}</div>
+      `;
+
+      output.appendChild(div);
+    }
+
+  } catch (err) {
+    status.textContent = "Error loading API";
+    output.textContent = err.message;
+    console.error(err);
+  }
+}
+
+loadRiverData();
+</script>
+
+</body>
+</html>
+
