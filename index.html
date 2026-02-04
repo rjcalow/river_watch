@@ -141,6 +141,22 @@
       background: color-mix(in srgb, var(--text) 85%, transparent);
       box-shadow: 0 10px 30px rgba(0,0,0,0.20);
     }
+    /* extra translucent lines for each station */
+    .stationLine{
+      height: 8px;
+      border-radius: 999px;
+      opacity: 0.22;
+      box-shadow: none;
+      mix-blend-mode: multiply;
+    }
+    @media (prefers-color-scheme: dark){
+      .stationLine{
+        opacity: 0.30;
+        mix-blend-mode: screen;
+      }
+    }
+    .stationLine.worksop{ background: var(--w); }
+    .stationLine.blyth  { background: var(--b); }
 
     /* Subtle wave shimmer (optional, still minimal) */
     .waterline::after{
@@ -277,6 +293,8 @@
 
           <!-- waterline -->
           <div class="waterline" id="waterline"></div>
+          <div class="waterline stationLine worksop" id="lineWorksop"></div>
+          <div class="waterline stationLine blyth" id="lineBlyth"></div>
 
           <!-- flags -->
           <div class="flag" id="flagWorksop" style="left:14px;">
@@ -490,6 +508,10 @@
         // Place the flags at their own heights
         setY(document.getElementById("flagWorksop"), (typeof w==="number")?w:0);
         setY(document.getElementById("flagBlyth"),   (typeof b==="number")?b:0);
+
+        // Soft waterlines for each station reading
+        setY(document.getElementById("lineWorksop"), (typeof w === "number") ? w : 0);
+        setY(document.getElementById("lineBlyth"),   (typeof b === "number") ? b : 0);
 
         document.getElementById("wVal").textContent = (typeof w==="number") ? (w.toFixed(2) + "m") : "—";
         document.getElementById("bVal").textContent = (typeof b==="number") ? (b.toFixed(2) + "m") : "—";
