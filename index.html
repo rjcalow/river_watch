@@ -141,22 +141,37 @@
       background: color-mix(in srgb, var(--text) 85%, transparent);
       box-shadow: 0 10px 30px rgba(0,0,0,0.20);
     }
-    /* extra translucent lines for each station */
     .stationLine{
-      height: 8px;
+      height: 10px;
       border-radius: 999px;
-      opacity: 0.22;
+      opacity: 1;                 /* we control visibility via gradients */
       box-shadow: none;
-      mix-blend-mode: multiply;
+      mix-blend-mode: normal;     /* stop it washing out */
     }
-    @media (prefers-color-scheme: dark){
-      .stationLine{
-        opacity: 0.30;
-        mix-blend-mode: screen;
-      }
+
+    /* Worksop line: solid core + glow */
+    .stationLine.worksop{
+      background:
+        linear-gradient(to bottom,
+          transparent 0%,
+          color-mix(in srgb, var(--w) 70%, transparent) 35%,
+          color-mix(in srgb, var(--w) 95%, transparent) 50%,
+          color-mix(in srgb, var(--w) 70%, transparent) 65%,
+          transparent 100%);
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--w) 55%, transparent));
     }
-    .stationLine.worksop{ background: var(--w); }
-    .stationLine.blyth  { background: var(--b); }
+
+    /* Blyth line: solid core + glow */
+    .stationLine.blyth{
+      background:
+        linear-gradient(to bottom,
+          transparent 0%,
+          color-mix(in srgb, var(--b) 70%, transparent) 35%,
+          color-mix(in srgb, var(--b) 95%, transparent) 50%,
+          color-mix(in srgb, var(--b) 70%, transparent) 65%,
+          transparent 100%);
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--b) 55%, transparent));
+    }
 
     /* Subtle wave shimmer (optional, still minimal) */
     .waterline::after{
