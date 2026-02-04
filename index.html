@@ -150,6 +150,25 @@
       opacity:0.25;
       filter: blur(10px);
     }
+    .marker{
+      position:absolute;
+      left:0; right:0;
+      height:0;
+      border-top:1px dashed color-mix(in srgb, var(--text) 55%, transparent);
+      pointer-events:none;
+    }
+    .markerLabel{
+      position:absolute;
+      right:10px;
+      top:-10px;
+      font-size:11px;
+      color:var(--muted);
+      background: color-mix(in srgb, var(--bg) 80%, transparent);
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:2px 6px;
+      white-space:nowrap;
+    }
 
     /* Tick marks on left */
     .ticks{
@@ -245,6 +264,14 @@
           <div class="band warn" id="bandWarn"></div>
           <div class="band bad"  id="bandBad"></div>
 
+          <!-- risk markers -->
+          <div class="marker" id="markerWorksop">
+            <span class="markerLabel" id="labelWorksop">Worksop risk —</span>
+          </div>
+          <div class="marker" id="markerBlyth">
+            <span class="markerLabel" id="labelBlyth">Blyth risk —</span>
+          </div>
+
           <!-- ticks -->
           <div class="ticks" id="ticks"></div>
 
@@ -282,11 +309,11 @@
         <div class="card">
           <p style="margin:0; font-weight:950;">About</p>
           <p class="muted" style="margin:10px 0 0 0; line-height:1.6;">
-            Two gauges on the River Ryton (Worksop and Blyth). This is informational only.
+            Dashboard for two gauges on the River Ryton (Worksop and Blyth). This is informational only.
             For official flood warnings use the GOV.UK service.
           </p>
           <p class="muted tiny" style="margin:10px 0 0 0;">
-            Property flooding is possible above 1.30m.
+            Property flooding is possible above 1.30m at Worksop and 1.80m at Blyth.
           </p>
           <p class="muted tiny" style="margin:10px 0 0 0;">
             <a href="https://check-for-flooding.service.gov.uk/station/2121" target="_blank" rel="noopener">Worksop station</a> ·
@@ -347,7 +374,8 @@
     // thresholds (m)
     const maxScaleM = 2.50;
     const t1 = 1.05; // normal top
-    const t2 = 1.30; // property possible
+    const t2Worksop = 1.30; // property possible
+    const t2Blyth = 1.80;   // property possible
 
     // theme toggle
     (function(){
@@ -372,17 +400,17 @@
     const pct = (m)=> (typeof m==="number") ? clamp((m/maxScaleM)*100,0,100) : 0;
     const fmt = (iso)=>{ if(!iso) return "—"; try{return new Date(iso).toLocaleString();}catch{return iso;} };
 
-    function statusFor(m){
+    function statusFor(m, warnTop, riskTop){
       if (typeof m !== "number") return { text:"No data", color:"transparent" };
-      if (m >= t2) return { text:"Risk",   color:"var(--bad)" };
-      if (m >= t1) return { text:"High",   color:"var(--warn)" };
+      if (m >= riskTop) return { text:"Risk",   color:"var(--bad)" };
+      if (m >= warnTop) return { text:"High",   color:"var(--warn)" };
       return            { text:"Normal", color:"var(--good)" };
     }
 
     function initBandsAndTicks(){
       // bands are vertical, so we set from bottom
       const goodTop = pct(t1);
-      const warnTop = pct(t2);
+      const warnTop = pct(t2Worksop);
 
       const bandGood = document.getElementById("bandGood");
       const bandWarn = document.getElementById("bandWarn");
@@ -396,6 +424,19 @@
 
       bandBad.style.bottom = warnTop + "%";
       bandBad.style.height = (100 - warnTop) + "%";
+
+      const markerWorksop = document.getElementById("markerWorksop");
+      const markerBlyth = document.getElementById("markerBlyth");
+      const labelWorksop = document.getElementById("labelWorksop");
+      const labelBlyth = document.getElementById("labelBlyth");
+      if (markerWorksop){
+        markerWorksop.style.bottom = pct(t2Worksop) + "%";
+        if (labelWorksop) labelWorksop.textContent = "Worksop risk " + t2Worksop.toFixed(2) + "m";
+      }
+      if (markerBlyth){
+        markerBlyth.style.bottom = pct(t2Blyth) + "%";
+        if (labelBlyth) labelBlyth.textContent = "Blyth risk " + t2Blyth.toFixed(2) + "m";
+      }
 
       // ticks on left (every 0.5m)
       const ticks = document.getElementById("ticks");
@@ -453,8 +494,8 @@
         document.getElementById("wVal").textContent = (typeof w==="number") ? (w.toFixed(2) + "m") : "—";
         document.getElementById("bVal").textContent = (typeof b==="number") ? (b.toFixed(2) + "m") : "—";
 
-        const ws = statusFor(w);
-        const bs = statusFor(b);
+        const ws = statusFor(w, t1, t2Worksop);
+        const bs = statusFor(b, t1, t2Blyth);
 
         document.getElementById("wDot").style.background = ws.color;
         document.getElementById("bDot").style.background = bs.color;
