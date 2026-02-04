@@ -2,65 +2,442 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>River Ryton – Test</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>River Ryton Watch</title>
+  <meta name="theme-color" content="#0b0d12" />
   <style>
-    body { font-family: system-ui, sans-serif; margin: 40px; }
-    .card { border: 1px solid #ccc; padding: 20px; border-radius: 12px; max-width: 600px; }
-    h1 { margin-top: 0; }
-    .station { margin-top: 16px; padding: 12px; border: 1px dashed #aaa; border-radius: 8px; }
-    .big { font-size: 28px; font-weight: bold; }
-    .muted { color: #666; font-size: 14px; }
-  </style>
-</head>
-<body>
+    /* ---------- Theme (auto + toggle) ---------- */
+    :root{
+      --bg:#f6f7fb; --text:#0b0d12; --muted:#667085;
+      --card:rgba(255,255,255,0.78); --stroke:rgba(0,0,0,0.12);
+      --shadow:0 14px 34px rgba(0,0,0,0.10);
+      --good:#16a34a; --warn:#f59e0b; --bad:#ef4444;
+      --w:#6aa6ff; --b:#ff6ad5;
+      --rail:rgba(0,0,0,0.08);
+      --glass: blur(10px);
+      --header-h:56px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b0d12; --text:#f2f4f8; --muted:#aab3c2;
+        --card:rgba(18,22,34,0.76); --stroke:rgba(255,255,255,0.14);
+        --shadow:0 18px 46px rgba(0,0,0,0.50);
+        --rail:rgba(255,255,255,0.10);
+      }
+    }
+    html[data-theme="light"]{ color-scheme: light; }
+    html[data-theme="dark"]{ color-scheme: dark; }
 
-<div class="card">
-  <h1>River Ryton API Test</h1>
-  <div id="status" class="muted">Loading…</div>
-  <div id="output"></div>
-</div>
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{
+      overflow:hidden;
+      background:var(--bg);
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    a{ color:inherit; text-decoration:underline; text-underline-offset:3px; }
 
-<script>
-async function loadRiverData() {
-  const status = document.getElementById("status");
-  const output = document.getElementById("output");
+    /* ---------- Fixed top bar ---------- */
+    .topbar{
+      position:fixed; top:0; left:0; right:0; z-index:50;
+      border-bottom:1px solid var(--stroke);
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: var(--glass);
+    }
+    .topbarInner{
+      width:min(760px, 100%);
+      margin:0 auto;
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:800; letter-spacing:-0.02em;
+      white-space:nowrap;
+    }
+    .dot{
+      width:9px; height:9px; border-radius:50%;
+      background:linear-gradient(135deg, var(--good), var(--warn), var(--bad));
+      flex:0 0 auto;
+    }
+    .btn{
+      border:1px solid var(--stroke);
+      background: transparent;
+      color:var(--text);
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:700;
+      font-size:13px;
+      cursor:pointer;
+    }
+    .btn:active{ transform:translateY(1px); }
 
-  try {
-    const res = await fetch("/api/ryton");
-    if (!res.ok) throw new Error("API error " + res.status);
-
-    const data = await res.json();
-    status.textContent = "Live data loaded";
-
-    output.innerHTML = "";
-
-    for (const s of data.stations) {
-      const div = document.createElement("div");
-      div.className = "station";
-
-      const value = s.latest?.value ?? "—";
-      const time  = s.latest?.dateTime ?? "—";
-
-      div.innerHTML = `
-        <div class="big">${s.label}</div>
-        <div>Level: <strong>${value} m</strong></div>
-        <div class="muted">Updated: ${new Date(time).toLocaleString()}</div>
-      `;
-
-      output.appendChild(div);
+    /* ---------- Snap container ---------- */
+    #appScroll{
+      height:100vh;
+      padding-top:var(--header-h);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      scroll-snap-type:y mandatory;
+      scroll-behavior:smooth;
+    }
+    section{
+      min-height:calc(100vh - var(--header-h));
+      scroll-snap-align:start;
+      padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    @media (prefers-reduced-motion: reduce){
+      #appScroll{ scroll-snap-type:none; scroll-behavior:auto; }
     }
 
-  } catch (err) {
-    status.textContent = "Error loading API";
-    output.textContent = err.message;
-    console.error(err);
-  }
-}
+    /* ---------- Minimal card ---------- */
+    .wrap{ width:min(760px, 100%); display:grid; gap:12px; }
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      backdrop-filter: var(--glass);
+    }
+    .muted{ color:var(--muted); }
+    .tiny{ font-size:12px; }
+    .title{ margin:0; font-size:14px; font-weight:800; letter-spacing:-0.01em; }
 
-loadRiverData();
-</script>
+    /* ---------- The main graphic: one rail + two markers ---------- */
+    .graphic{
+      display:grid;
+      gap:14px;
+      align-items:center;
+      justify-items:center;
+    }
+    .railWrap{
+      width:min(380px, 86vw);
+      height: min(58vh, 520px);
+      border-radius:28px;
+      background: var(--rail);
+      border: 1px solid var(--stroke);
+      position:relative;
+      overflow:hidden;
+    }
 
+    /* risk bands (simple background) */
+    .band{ position:absolute; left:0; right:0; }
+    .band.good{ background: color-mix(in srgb, var(--good) 18%, transparent); }
+    .band.warn{ background: color-mix(in srgb, var(--warn) 18%, transparent); }
+    .band.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); }
+
+    /* subtle tick marks */
+    .tick{
+      position:absolute; left:18px; right:18px;
+      height:1px;
+      background: color-mix(in srgb, var(--stroke) 55%, transparent);
+      opacity:0.8;
+    }
+
+    /* markers */
+    .marker{
+      position:absolute;
+      left:0; right:0;
+      height:0;
+      pointer-events:none;
+    }
+    .markerLine{
+      position:absolute;
+      left:18px; right:18px;
+      height:2px;
+      border-radius:999px;
+      transform:translateY(-1px);
+    }
+    .markerLabel{
+      position:absolute;
+      left:18px;
+      transform: translateY(-50%);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: color-mix(in srgb, var(--bg) 72%, transparent);
+      backdrop-filter: var(--glass);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.12);
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:-0.01em;
+    }
+    .sw{ width:10px; height:10px; border-radius:50%; }
+
+    /* bottom legend (minimal) */
+    .legend{
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .pill{
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      background: transparent;
+    }
+    .statusDot{ width:10px; height:10px; border-radius:50%; display:inline-block; vertical-align:-2px; margin-right:6px; }
+
+    /* secondary sections keep minimal */
+    .grid2{ display:grid; gap:12px; grid-template-columns:1fr; }
+    @media (min-width: 860px){ .grid2{ grid-template-columns:1fr 1fr; } }
+    .mapBox{
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      overflow:hidden;
+      background: var(--rail);
+    }
+    .mapBox iframe{ width:100%; height:320px; border:0; display:block; }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbarInner">
+      <div class="brand"><span class="dot"></span><span>River Ryton</span></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="refreshBtn" type="button">Refresh</button>
+        <button class="btn" id="themeBtn" type="button">Theme</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="appScroll">
+    <!-- 1) MAIN GRAPHIC -->
+    <section id="live">
+      <div class="wrap">
+        <div class="card graphic">
+          <div class="muted tiny" id="updatedText">Updated: —</div>
+
+          <div class="railWrap" aria-label="River level graphic">
+            <!-- bands set by JS -->
+            <div class="band good" id="bandGood"></div>
+            <div class="band warn" id="bandWarn"></div>
+            <div class="band bad"  id="bandBad"></div>
+
+            <!-- ticks (JS) -->
+            <div id="ticks"></div>
+
+            <!-- markers -->
+            <div class="marker" id="mWorksop">
+              <div class="markerLine" style="background:var(--w)"></div>
+              <div class="markerLabel"><span class="sw" style="background:var(--w)"></span>Worksop <span id="vWorksop">—</span></div>
+            </div>
+
+            <div class="marker" id="mBlyth">
+              <div class="markerLine" style="background:var(--b)"></div>
+              <div class="markerLabel"><span class="sw" style="background:var(--b)"></span>Blyth <span id="vBlyth">—</span></div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <span class="pill"><span class="statusDot" id="dotWorksop"></span>Worksop: <b id="sWorksop">—</b></span>
+            <span class="pill"><span class="statusDot" id="dotBlyth"></span>Blyth: <b id="sBlyth">—</b></span>
+          </div>
+
+          <div class="muted tiny" id="errLine" style="min-height:16px;"></div>
+          <div class="muted tiny">↓ Scroll for info</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) INFO + MAP (still minimal) -->
+    <section id="info">
+      <div class="wrap">
+        <div class="card">
+          <p class="title">About</p>
+          <p class="muted" style="margin:10px 0 0 0; line-height:1.55;">
+            Two gauges on the River Ryton (Worksop and Blyth). Colours are simple thresholds:
+            green (normal), amber (above normal), red (property flooding possible).
+          </p>
+          <p class="muted tiny" style="margin:10px 0 0 0;">
+            Informational only — use the official service for warnings.
+            <a href="https://check-for-flooding.service.gov.uk/" target="_blank" rel="noopener">Check for flooding</a>.
+          </p>
+        </div>
+
+        <div class="card">
+          <p class="title">Map</p>
+          <div class="mapBox" style="margin-top:10px;">
+            <iframe
+              title="River Ryton area map"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-1.060%2C53.300%2C-0.850%2C53.410&layer=mapnik">
+            </iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) SUPPORT -->
+    <section id="support">
+      <div class="wrap">
+        <div class="card">
+          <p class="title">Support</p>
+          <p class="muted" style="margin:10px 0 0 0; line-height:1.55;">
+            If you want to keep this online and improve it (better map, more gauges), you can support the project.
+          </p>
+          <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <a class="btn" style="text-decoration:none; display:inline-block;" href="#"
+               onclick="alert('Replace this link with Ko-fi / BuyMeACoffee / PayPal'); return false;">Support</a>
+            <span class="muted tiny">
+              Attribution: “this uses Environment Agency flood and river level data from the real-time data API (Beta)”.
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---- API
+    const API_URL = "/api/ryton";
+
+    // ---- Simple thresholds (from Worksop station page)
+    const CFG = {
+      maxScaleM: 2.50,
+      normalTopM: 1.05,
+      propertyPossibleM: 1.30
+    };
+
+    // ---- Theme toggle (auto by default)
+    (function initTheme(){
+      const saved = localStorage.getItem("rrw_theme");
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+
+      document.getElementById("themeBtn").addEventListener("click", () => {
+        const cur = document.documentElement.dataset.theme || "";
+        const next = (cur === "dark") ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem("rrw_theme", next);
+      });
+    })();
+
+    // ---- Helpers
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    const pctFromM = (m) => (typeof m === "number") ? clamp((m / CFG.maxScaleM) * 100, 0, 100) : 0;
+
+    function fmtTime(iso){
+      if (!iso) return "—";
+      try { return new Date(iso).toLocaleString(); } catch { return iso; }
+    }
+
+    function statusFor(m){
+      if (typeof m !== "number") return { key: "none", text: "No data", color: "transparent" };
+      if (m >= CFG.propertyPossibleM) return { key: "red", text: "Risk", color: "var(--bad)" };
+      if (m >= CFG.normalTopM) return { key: "amber", text: "High", color: "var(--warn)" };
+      return { key: "green", text: "Normal", color: "var(--good)" };
+    }
+
+    // ---- Build the graphic rails (bands + ticks)
+    function initGraphic(){
+      // bands: bottom green, mid amber, top red
+      const goodTop = pctFromM(CFG.normalTopM);
+      const warnTop = pctFromM(CFG.propertyPossibleM);
+
+      const bandGood = document.getElementById("bandGood");
+      const bandWarn = document.getElementById("bandWarn");
+      const bandBad  = document.getElementById("bandBad");
+
+      bandGood.style.bottom = "0%";
+      bandGood.style.height = goodTop + "%";
+
+      bandWarn.style.bottom = goodTop + "%";
+      bandWarn.style.height = (warnTop - goodTop) + "%";
+
+      bandBad.style.bottom = warnTop + "%";
+      bandBad.style.height = (100 - warnTop) + "%";
+
+      // ticks every 0.5m (subtle)
+      const ticks = document.getElementById("ticks");
+      ticks.innerHTML = "";
+      for (let m = 0; m <= CFG.maxScaleM + 0.0001; m += 0.5){
+        const d = document.createElement("div");
+        d.className = "tick";
+        d.style.bottom = pctFromM(m) + "%";
+        ticks.appendChild(d);
+      }
+    }
+
+    function setMarker(id, m){
+      document.getElementById(id).style.bottom = pctFromM(m) + "%";
+    }
+
+    async function load(){
+      const errLine = document.getElementById("errLine");
+      errLine.textContent = "";
+
+      const btn = document.getElementById("refreshBtn");
+      btn.textContent = "Refreshing…";
+      btn.disabled = true;
+
+      try{
+        const res = await fetch(API_URL, { headers: { "Accept":"application/json" }});
+        if (!res.ok) throw new Error("API HTTP " + res.status);
+        const data = await res.json();
+
+        const stations = Array.isArray(data?.stations) ? data.stations : [];
+        const worksop = stations.find(s => /worksop/i.test(s.label || "")) || stations[0];
+        const blyth   = stations.find(s => /blyth/i.test(s.label || "")) || stations[1];
+
+        const wVal = worksop?.latest?.value;
+        const wTime = worksop?.latest?.dateTime;
+        const bVal = blyth?.latest?.value;
+        const bTime = blyth?.latest?.dateTime;
+
+        // updated text = newest timestamp
+        const newest = [wTime, bTime].filter(Boolean).sort().slice(-1)[0] || null;
+        document.getElementById("updatedText").textContent = "Updated: " + fmtTime(newest);
+
+        // markers + value labels
+        setMarker("mWorksop", (typeof wVal === "number") ? wVal : 0);
+        setMarker("mBlyth",   (typeof bVal === "number") ? bVal : 0);
+
+        document.getElementById("vWorksop").textContent = (typeof wVal === "number") ? (wVal.toFixed(2) + "m") : "—";
+        document.getElementById("vBlyth").textContent   = (typeof bVal === "number") ? (bVal.toFixed(2) + "m") : "—";
+
+        // statuses
+        const ws = statusFor(wVal);
+        const bs = statusFor(bVal);
+
+        document.getElementById("sWorksop").textContent = ws.text;
+        document.getElementById("sBlyth").textContent   = bs.text;
+
+        const dotW = document.getElementById("dotWorksop");
+        const dotB = document.getElementById("dotBlyth");
+        dotW.style.background = ws.color;
+        dotB.style.background = bs.color;
+
+      }catch(err){
+        console.error(err);
+        errLine.textContent = "Couldn’t load live data. " + (err?.message || "Unknown error");
+      }finally{
+        btn.textContent = "Refresh";
+        btn.disabled = false;
+      }
+    }
+
+    initGraphic();
+    load();
+    document.getElementById("refreshBtn").addEventListener("click", load);
+  </script>
 </body>
 </html>
-
