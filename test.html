@@ -322,7 +322,7 @@
   </div>
 
   <script>
-    const API_URL = "/api";
+    const API_URL = "/api/ryton";
 
     function safeTime(iso){
       if(!iso) return "—";
@@ -399,19 +399,38 @@
       const u = document.getElementById("updated");
 
       try{
+        console.log('Fetching from:', API_URL);
         const res = await fetch(API_URL);
-        if(!res.ok) throw new Error("API error");
+        console.log('Response status:', res.status);
+        
+        if(!res.ok) {
+          const errorText = await res.text();
+          console.error('API error response:', errorText);
+          throw new Error(`API error: ${res.status}`);
+        }
+        
         const data = await res.json();
+        console.log('API data:', data);
         
         // Extract station data
         const stations = data?.stations || [];
+        console.log('Stations:', stations);
+        
+        if (!stations.length) {
+          throw new Error('No station data received');
+        }
         
         // Find Worksop (4049) and Blyth (4091)
         const worksop = stations.find(s => s.stationId === "4049");
         const blyth = stations.find(s => s.stationId === "4091");
         
+        console.log('Worksop:', worksop);
+        console.log('Blyth:', blyth);
+        
         const worksopLevel = worksop?.latest?.value;
         const blythLevel = blyth?.latest?.value;
+        
+        console.log('Levels:', { worksopLevel, blythLevel });
         
         // Get latest timestamp
         const latestTime = worksop?.latest?.dateTime || blyth?.latest?.dateTime;
@@ -431,10 +450,11 @@
         u.innerHTML = `Updated: ${safeTime(latestTime)} ·`;
       }
       catch(e){
-        console.error(e);
+        console.error('Load error:', e);
         a.textContent = "can't tell right now.";
         l1.textContent = "Worksop: —";
         l2.textContent = "Blyth: —";
+        u.innerHTML = `Error: ${e.message} · Check console for details`;
       }
     }
 
