@@ -132,12 +132,12 @@
 
     .chart-label{
       position: absolute;
-      top: 8px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: clamp(11px, 2vw, 14px);
-      font-weight: 700;
+      font-size: clamp(13px, 2.4vw, 16px);
+      font-weight: 800;
       color: rgba(255, 255, 255, 0.95);
       white-space: nowrap;
       text-shadow: 0 1px 3px rgba(0,0,0,0.3);
@@ -145,11 +145,11 @@
 
     .chart-value{
       position: absolute;
-      bottom: 8px;
+      bottom: 56px;
       left: 50%;
       transform: translateX(-50%);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: clamp(12px, 2.2vw, 15px);
+      font-size: clamp(15px, 2.8vw, 18px);
       font-weight: 900;
       color: rgba(255, 255, 255, 0.95);
       white-space: nowrap;
@@ -180,12 +180,6 @@
       margin-bottom: 36px;
       letter-spacing: -0.02em;
       font-weight: 700;
-    }
-
-    .level{
-      font-size: clamp(16px, 2vw, 22px);
-      color: var(--faint);
-      margin-bottom: 8px;
     }
 
     .meta{
@@ -250,18 +244,20 @@
     @media (max-width: 600px){
       .charts-bg{
         gap: clamp(30px, 6vw, 60px);
-        height: 50vh;
-        max-height: 400px;
+        height: 55vh;
+        max-height: 450px;
       }
       .wrap{
         width: min(980px, calc(100% - 24px));
-        padding:20px 0 120px;
+        padding:20px 0 140px;
       }
       .title{
-        margin-bottom: 26px;
+        margin-bottom: 20px;
+        font-size: clamp(28px, 5vw, 48px);
       }
       .answer{
-        margin-bottom: 28px;
+        margin-bottom: 24px;
+        font-size: clamp(24px, 4.8vw, 48px);
       }
       .bmc-corner{
         right: 12px;
@@ -299,8 +295,22 @@
 
     <p class="answer" id="answer">loading…</p>
 
-    <p class="level" id="level1">Worksop: —</p>
-    <p class="level" id="level2">Blyth: —</p>
+    <div style="max-width: 560px; margin: 0 auto 28px; padding: 20px; background: color-mix(in srgb, var(--bg2) 50%, transparent); border-radius: 12px; border: 1px solid var(--faint);">
+      <p style="margin: 0 0 12px 0; color: var(--text); font-size: 15px; line-height: 1.6; font-weight: 600;">
+        About this dashboard
+      </p>
+      <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 14px; line-height: 1.6;">
+        Real-time data from two Environment Agency gauges on the River Ryton (Worksop and Blyth). This is informational only — for official flood warnings use the GOV.UK service.
+      </p>
+      <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 13px; line-height: 1.5;">
+        ⚠️ Property flooding is possible above <strong>1.30m</strong> at Worksop and <strong>1.80m</strong> at Blyth.
+      </p>
+      <p style="margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5;">
+        <a href="https://check-for-flooding.service.gov.uk/station/2121" target="_blank" rel="noopener">Worksop station</a> · 
+        <a href="https://check-for-flooding.service.gov.uk/station/2141" target="_blank" rel="noopener">Blyth station</a> · 
+        <a href="https://check-for-flooding.service.gov.uk/" target="_blank" rel="noopener">Check for flooding</a>
+      </p>
+    </div>
 
     <p class="meta" id="updated">
       Updated: — · 
@@ -434,8 +444,6 @@
 
     async function load(){
       const a = document.getElementById("answer");
-      const l1 = document.getElementById("level1");
-      const l2 = document.getElementById("level2");
       const u = document.getElementById("updated");
 
       try{
@@ -479,10 +487,6 @@
 
         a.textContent = result.answer;
         
-        // Update level displays
-        l1.textContent = `Worksop: ${fmt(worksopLevel)} m`;
-        l2.textContent = `Blyth: ${fmt(blythLevel)} m`;
-        
         // Update background charts with color coding
         updateChart('chart1', 'chartVal1', worksopLevel || 0, true);
         updateChart('chart2', 'chartVal2', blythLevel || 0, false);
@@ -492,8 +496,6 @@
       catch(e){
         console.error('Load error:', e);
         a.textContent = "can't tell right now.";
-        l1.textContent = "Worksop: —";
-        l2.textContent = "Blyth: —";
         u.innerHTML = `Error: ${e.message} · Check console for details`;
       }
     }
