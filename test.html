@@ -170,14 +170,8 @@
 
     .answer{
       font-size: clamp(30px, 5.5vw, 60px);
-      margin-bottom: 22px;
-      letter-spacing: -0.01em;
-    }
-
-    .advice{
-      font-size: clamp(26px, 4.4vw, 46px);
       margin-bottom: 36px;
-      letter-spacing: -0.005em;
+      letter-spacing: -0.01em;
     }
 
     .level{
@@ -258,9 +252,6 @@
         margin-bottom: 26px;
       }
       .answer{
-        margin-bottom: 16px;
-      }
-      .advice{
         margin-bottom: 28px;
       }
       .bmc-corner{
@@ -296,7 +287,6 @@
     <h1 class="title">River Ryton Water Level</h1>
 
     <p class="answer" id="answer">loading…</p>
-    <p class="advice" id="advice">—</p>
 
     <p class="level" id="level1">Worksop: —</p>
     <p class="level" id="level2">Blyth: —</p>
@@ -332,7 +322,7 @@
   </div>
 
   <script>
-    const API_URL = "https://riverryton.co.uk/api";
+    const API_URL = "/api";
 
     function safeTime(iso){
       if(!iso) return "—";
@@ -345,56 +335,48 @@
     }
 
     function levelDecision(worksopLevel, blythLevel){
+      // Flood thresholds:
+      // Worksop: Property flooding possible above 1.30m
+      // Blyth: Property flooding possible above 1.80m
+      
+      const worksopValid = Number.isFinite(worksopLevel);
+      const blythValid = Number.isFinite(blythLevel);
+      
+      if (!worksopValid && !blythValid) {
+        return { answer: "unknown" };
+      }
+
+      // Check for flood risk at either station
+      const worksopFlooding = worksopValid && worksopLevel >= 1.30;
+      const blythFlooding = blythValid && blythLevel >= 1.80;
+      
+      if (worksopFlooding || blythFlooding) {
+        return { answer: "⚠️ flood risk" };
+      }
+
       // Use the higher of the two readings for overall status
       const maxLevel = Math.max(
-        Number.isFinite(worksopLevel) ? worksopLevel : 0,
-        Number.isFinite(blythLevel) ? blythLevel : 0
+        worksopValid ? worksopLevel : 0,
+        blythValid ? blythLevel : 0
       );
-      
-      if (!Number.isFinite(maxLevel) || maxLevel === 0) {
-        return {
-          answer: "unknown",
-          advice: "Unable to determine current conditions."
-        };
-      }
 
       // Very low water (< 0.3m)
       if (maxLevel < 0.3) {
-        return {
-          answer: "very low",
-          advice: "Not suitable for kayaking. Good for walking along the banks."
-        };
+        return { answer: "very low" };
       }
       
       // Low (0.3 - 0.6m)
       if (maxLevel < 0.6) {
-        return {
-          answer: "low",
-          advice: "Suitable for experienced kayakers. Great for riverside walks and fishing."
-        };
+        return { answer: "low" };
       }
       
-      // Normal (0.6 - 1.2m)
-      if (maxLevel < 1.2) {
-        return {
-          answer: "normal",
-          advice: "Good conditions for kayaking and fishing. Pleasant for walks."
-        };
+      // Normal (0.6 - 1.0m)
+      if (maxLevel < 1.0) {
+        return { answer: "normal" };
       }
       
-      // High (1.2 - 2.0m)
-      if (maxLevel < 2.0) {
-        return {
-          answer: "high",
-          advice: "Experienced paddlers only. Be cautious near the riverbanks."
-        };
-      }
-      
-      // Very high (> 2.0m)
-      return {
-        answer: "very high",
-        advice: "Avoid river activities. Stay clear of the water and banks."
-      };
+      // High (1.0m+)
+      return { answer: "high" };
     }
 
     function updateChart(chartId, value, maxValue = 3.0) {
@@ -412,7 +394,6 @@
 
     async function load(){
       const a = document.getElementById("answer");
-      const d = document.getElementById("advice");
       const l1 = document.getElementById("level1");
       const l2 = document.getElementById("level2");
       const u = document.getElementById("updated");
@@ -438,7 +419,6 @@
         const result = levelDecision(worksopLevel, blythLevel);
 
         a.textContent = result.answer;
-        d.textContent = result.advice;
         
         // Update level displays
         l1.textContent = `Worksop: ${fmt(worksopLevel)} m`;
@@ -453,7 +433,6 @@
       catch(e){
         console.error(e);
         a.textContent = "can't tell right now.";
-        d.textContent = "Try again later.";
         l1.textContent = "Worksop: —";
         l2.textContent = "Blyth: —";
       }
