@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>River Ryton Water Level</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta name="description" content="Check River Ryton water levels in real-time. Get instant updates for kayaking, fishing, and walking along the River Ryton in Nottinghamshire.">
+  <link rel="canonical" href="https://riverryton.com/">
+  
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icon.png">
+  <link rel="apple-touch-icon" href="/icon.png">
+  
+  <meta name="theme-color" content="#f2f2f2">
+  <meta name="robots" content="index,follow">
+  <meta name="author" content="River Level">
+  <meta name="keywords" content="River Ryton, water level, river conditions, kayaking Nottinghamshire, fishing River Ryton, river flow, Nottinghamshire rivers">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://riverryton.com/">
+  <meta property="og:title" content="River Ryton Water Level - Real-Time Updates">
+  <meta property="og:description" content="Check River Ryton water levels in real-time for kayaking, fishing, and riverside walks.">
+  <meta property="og:image" content="https://riverryton.com/icon.png">
+  <meta property="og:site_name" content="River Ryton Water Level">
+  <meta property="og:locale" content="en_GB">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="River Ryton Water Level">
+  <meta name="twitter:description" content="Real-time water level updates for River Ryton.">
+  <meta name="twitter:image" content="https://riverryton.com/icon.png">
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "River Ryton Water Level",
+    "url": "https://riverryton.com/",
+    "description": "Real-time water level monitoring for River Ryton",
+    "about": {
+      "@type": "BodyOfWater",
+      "name": "River Ryton",
+      "address": {
+        "@type": "PostalAddress",
+        "addressRegion": "Nottinghamshire",
+        "addressCountry": "GB"
+      }
+    }
+  }
+  </script>
+
+  <!-- Google Font: Caprasimo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caprasimo&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg1:#efefef;
+      --bg2:#d9d9d9;
+      --text:#111;
+      --muted: rgba(0,0,0,.55);
+      --faint: rgba(0,0,0,.28);
+      --chart-low: #3b82f6;
+      --chart-med: #f59e0b;
+      --chart-high: #ef4444;
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg1:#121316;
+        --bg2:#0b0c0e;
+        --text:#f4f4f5;
+        --muted: rgba(255,255,255,.55);
+        --faint: rgba(255,255,255,.30);
+        --chart-low: #60a5fa;
+        --chart-med: #fbbf24;
+        --chart-high: #f87171;
+      }
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+    }
+
+    body{
+      background:
+        radial-gradient(
+          circle at 50% 42%,
+          var(--bg1) 0%,
+          var(--bg2) 70%,
+          color-mix(in srgb, var(--bg2) 80%, #000) 100%
+        );
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family: "Caprasimo", serif;
+      text-rendering: optimizeLegibility;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .charts-bg{
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: min(100vw, 600px);
+      height: 70vh;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: clamp(40px, 8vw, 80px);
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+
+    .chart-bar{
+      position: relative;
+      width: clamp(60px, 12vw, 120px);
+      background: linear-gradient(
+        to top,
+        var(--chart-low) 0%,
+        var(--chart-low) 33%,
+        var(--chart-med) 33%,
+        var(--chart-med) 66%,
+        var(--chart-high) 66%,
+        var(--chart-high) 100%
+      );
+      border-radius: 8px 8px 0 0;
+      transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+
+    .chart-label{
+      position: absolute;
+      bottom: -32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: clamp(10px, 1.8vw, 13px);
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .wrap{
+      width:min(980px, calc(100% - 40px));
+      text-align:center;
+      padding:28px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1, p{
+      margin:0;
+    }
+
+    .title{
+      font-size: clamp(34px, 5.5vw, 64px);
+      margin-bottom: 34px;
+      letter-spacing: -0.01em;
+    }
+
+    .answer{
+      font-size: clamp(30px, 5.5vw, 60px);
+      margin-bottom: 22px;
+      letter-spacing: -0.01em;
+    }
+
+    .advice{
+      font-size: clamp(26px, 4.4vw, 46px);
+      margin-bottom: 36px;
+      letter-spacing: -0.005em;
+    }
+
+    .level{
+      font-size: clamp(16px, 2vw, 22px);
+      color: var(--faint);
+      margin-bottom: 8px;
+    }
+
+    .meta{
+      margin-top: 18px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    a{
+      color:inherit;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .bmc-corner{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1000;
+    }
+
+    .share-corner{
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 1000;
+    }
+
+    .share-btn{
+      background: var(--text);
+      color: var(--bg1);
+      border: none;
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .share-btn:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .share-btn:active{
+      transform: translateY(0);
+    }
+
+    .share-btn svg{
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    @media (max-width: 600px){
+      .charts-bg{
+        gap: clamp(30px, 6vw, 60px);
+        height: 60vh;
+      }
+      .wrap{
+        width: min(980px, calc(100% - 24px));
+        padding:20px 0 72px;
+      }
+      .title{
+        margin-bottom: 26px;
+      }
+      .answer{
+        margin-bottom: 16px;
+      }
+      .advice{
+        margin-bottom: 28px;
+      }
+      .bmc-corner{
+        right: 12px;
+        bottom: 12px;
+        transform: scale(0.88);
+        transform-origin: bottom right;
+      }
+      .share-corner{
+        left: 12px;
+        bottom: 12px;
+      }
+      .share-btn{
+        padding: 10px 18px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Background charts -->
+  <div class="charts-bg">
+    <div class="chart-bar" id="chart1" style="height: 0%;">
+      <div class="chart-label">Worksop</div>
+    </div>
+    <div class="chart-bar" id="chart2" style="height: 0%;">
+      <div class="chart-label">Blyth</div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <h1 class="title">River Ryton Water Level</h1>
+
+    <p class="answer" id="answer">loading…</p>
+    <p class="advice" id="advice">—</p>
+
+    <p class="level" id="level1">Worksop: —</p>
+    <p class="level" id="level2">Blyth: —</p>
+
+    <p class="meta" id="updated">
+      Updated: — · 
+    </p>
+  </main>
+
+  <div class="share-corner">
+    <button class="share-btn" id="shareBtn" aria-label="Share this page">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+      </svg>
+      Share
+    </button>
+  </div>
+
+  <div class="bmc-corner" aria-label="Buy me a coffee">
+    <script
+      type="text/javascript"
+      src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+      data-name="bmc-button"
+      data-slug="rjcalow"
+      data-color="#FFDD00"
+      data-emoji=""
+      data-font="Cookie"
+      data-text="Buy me a coffee"
+      data-outline-color="#000000"
+      data-font-color="#000000"
+      data-coffee-color="#ffffff"
+    ></script>
+  </div>
+
+  <script>
+    const API_URL = "https://riverryton.co.uk/api";
+
+    function safeTime(iso){
+      if(!iso) return "—";
+      try { return new Date(iso).toLocaleString(); }
+      catch { return iso; }
+    }
+
+    function fmt(n){
+      return Number.isFinite(n) ? n.toFixed(2) : "—";
+    }
+
+    function levelDecision(worksopLevel, blythLevel){
+      // Use the higher of the two readings for overall status
+      const maxLevel = Math.max(
+        Number.isFinite(worksopLevel) ? worksopLevel : 0,
+        Number.isFinite(blythLevel) ? blythLevel : 0
+      );
+      
+      if (!Number.isFinite(maxLevel) || maxLevel === 0) {
+        return {
+          answer: "unknown",
+          advice: "Unable to determine current conditions."
+        };
+      }
+
+      // Very low water (< 0.3m)
+      if (maxLevel < 0.3) {
+        return {
+          answer: "very low",
+          advice: "Not suitable for kayaking. Good for walking along the banks."
+        };
+      }
+      
+      // Low (0.3 - 0.6m)
+      if (maxLevel < 0.6) {
+        return {
+          answer: "low",
+          advice: "Suitable for experienced kayakers. Great for riverside walks and fishing."
+        };
+      }
+      
+      // Normal (0.6 - 1.2m)
+      if (maxLevel < 1.2) {
+        return {
+          answer: "normal",
+          advice: "Good conditions for kayaking and fishing. Pleasant for walks."
+        };
+      }
+      
+      // High (1.2 - 2.0m)
+      if (maxLevel < 2.0) {
+        return {
+          answer: "high",
+          advice: "Experienced paddlers only. Be cautious near the riverbanks."
+        };
+      }
+      
+      // Very high (> 2.0m)
+      return {
+        answer: "very high",
+        advice: "Avoid river activities. Stay clear of the water and banks."
+      };
+    }
+
+    function updateChart(chartId, value, maxValue = 3.0) {
+      const chart = document.getElementById(chartId);
+      if (!chart) return;
+      
+      // Calculate percentage (cap at 100%)
+      const percentage = Math.min((value / maxValue) * 100, 100);
+      
+      // Animate height
+      setTimeout(() => {
+        chart.style.height = percentage + '%';
+      }, 100);
+    }
+
+    async function load(){
+      const a = document.getElementById("answer");
+      const d = document.getElementById("advice");
+      const l1 = document.getElementById("level1");
+      const l2 = document.getElementById("level2");
+      const u = document.getElementById("updated");
+
+      try{
+        const res = await fetch(API_URL);
+        if(!res.ok) throw new Error("API error");
+        const data = await res.json();
+        
+        // Extract station data
+        const stations = data?.stations || [];
+        
+        // Find Worksop (4049) and Blyth (4091)
+        const worksop = stations.find(s => s.stationId === "4049");
+        const blyth = stations.find(s => s.stationId === "4091");
+        
+        const worksopLevel = worksop?.latest?.value;
+        const blythLevel = blyth?.latest?.value;
+        
+        // Get latest timestamp
+        const latestTime = worksop?.latest?.dateTime || blyth?.latest?.dateTime;
+        
+        const result = levelDecision(worksopLevel, blythLevel);
+
+        a.textContent = result.answer;
+        d.textContent = result.advice;
+        
+        // Update level displays
+        l1.textContent = `Worksop: ${fmt(worksopLevel)} m`;
+        l2.textContent = `Blyth: ${fmt(blythLevel)} m`;
+        
+        // Update background charts
+        updateChart('chart1', worksopLevel || 0);
+        updateChart('chart2', blythLevel || 0);
+        
+        u.innerHTML = `Updated: ${safeTime(latestTime)} ·`;
+      }
+      catch(e){
+        console.error(e);
+        a.textContent = "can't tell right now.";
+        d.textContent = "Try again later.";
+        l1.textContent = "Worksop: —";
+        l2.textContent = "Blyth: —";
+      }
+    }
+
+    // Share functionality
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const shareData = {
+        title: "River Ryton Water Level",
+        text: "Check River Ryton water levels in real-time for kayaking and fishing!",
+        url: window.location.href
+      };
+
+      // Try native Web Share API first (works on mobile)
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) {
+          // User cancelled or error - do nothing
+          if (err.name !== 'AbortError') {
+            console.log('Share failed:', err);
+          }
+        }
+      } else {
+        // Fallback: copy link to clipboard
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          const btn = document.getElementById("shareBtn");
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg> Copied!';
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+          }, 2000);
+        } catch (err) {
+          console.log('Copy failed:', err);
+          alert('Link: ' + window.location.href);
+        }
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>
