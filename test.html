@@ -64,9 +64,9 @@
       --text:#111;
       --muted: rgba(0,0,0,.55);
       --faint: rgba(0,0,0,.28);
-      --chart-low: #3b82f6;
-      --chart-med: #f59e0b;
-      --chart-high: #ef4444;
+      --good: #16a34a;
+      --warn: #f59e0b;
+      --bad: #ef4444;
     }
 
     @media (prefers-color-scheme: dark){
@@ -76,9 +76,6 @@
         --text:#f4f4f5;
         --muted: rgba(255,255,255,.55);
         --faint: rgba(255,255,255,.30);
-        --chart-low: #60a5fa;
-        --chart-med: #fbbf24;
-        --chart-high: #f87171;
       }
     }
 
@@ -118,36 +115,49 @@
       gap: clamp(40px, 8vw, 80px);
       z-index: 0;
       pointer-events: none;
-      opacity: 0.25;
+      opacity: 0.65;
     }
 
     .chart-bar{
       position: relative;
-      width: clamp(60px, 12vw, 120px);
-      background: linear-gradient(
-        to top,
-        var(--chart-low) 0%,
-        var(--chart-low) 33%,
-        var(--chart-med) 33%,
-        var(--chart-med) 66%,
-        var(--chart-high) 66%,
-        var(--chart-high) 100%
-      );
+      width: clamp(80px, 14vw, 140px);
+      background: var(--good);
       border-radius: 8px 8px 0 0;
-      transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    }
+
+    .chart-bar.status-warn{
+      background: var(--warn);
+    }
+
+    .chart-bar.status-bad{
+      background: var(--bad);
     }
 
     .chart-label{
       position: absolute;
-      bottom: -32px;
+      bottom: -36px;
       left: 50%;
       transform: translateX(-50%);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      font-size: clamp(10px, 1.8vw, 13px);
-      font-weight: 600;
+      font-size: clamp(11px, 2vw, 14px);
+      font-weight: 700;
       color: var(--muted);
       white-space: nowrap;
+    }
+
+    .chart-value{
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font-size: clamp(12px, 2.2vw, 15px);
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.95);
+      white-space: nowrap;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
 
     .wrap{
@@ -276,9 +286,11 @@
   <!-- Background charts -->
   <div class="charts-bg">
     <div class="chart-bar" id="chart1" style="height: 0%;">
+      <div class="chart-value" id="chartVal1">—</div>
       <div class="chart-label">Worksop</div>
     </div>
     <div class="chart-bar" id="chart2" style="height: 0%;">
+      <div class="chart-value" id="chartVal2">—</div>
       <div class="chart-label">Blyth</div>
     </div>
   </div>
@@ -335,7 +347,7 @@
     }
 
     function levelDecision(worksopLevel, blythLevel){
-      // Flood thresholds:
+      // Official EA flood thresholds:
       // Worksop: Property flooding possible above 1.30m
       // Blyth: Property flooding possible above 1.80m
       
@@ -354,37 +366,66 @@
         return { answer: "⚠️ flood risk" };
       }
 
+      // Check for above normal (high) levels
+      // Worksop normal range: 0.15-1.05m
+      // Blyth normal range: 0.42-1.60m
+      const worksopHigh = worksopValid && worksopLevel > 1.05;
+      const blythHigh = blythValid && blythLevel > 1.60;
+      
+      if (worksopHigh || blythHigh) {
+        return { answer: "high" };
+      }
+
       // Use the higher of the two readings for overall status
       const maxLevel = Math.max(
         worksopValid ? worksopLevel : 0,
         blythValid ? blythLevel : 0
       );
 
-      // Very low water (< 0.3m)
-      if (maxLevel < 0.3) {
+      // Low water (below normal range)
+      if (maxLevel < 0.15) {
         return { answer: "very low" };
       }
       
-      // Low (0.3 - 0.6m)
-      if (maxLevel < 0.6) {
-        return { answer: "low" };
-      }
-      
-      // Normal (0.6 - 1.0m)
-      if (maxLevel < 1.0) {
-        return { answer: "normal" };
-      }
-      
-      // High (1.0m+)
-      return { answer: "high" };
+      // Normal levels
+      return { answer: "normal" };
     }
 
-    function updateChart(chartId, value, maxValue = 3.0) {
+    function getStatusColor(level, isWorksop) {
+      if (!Number.isFinite(level)) return '';
+      
+      if (isWorksop) {
+        // Worksop: Normal 0.15-1.05m, Property flooding >1.30m
+        if (level >= 1.30) return 'status-bad';   // Flood risk
+        if (level > 1.05) return 'status-warn';   // Above normal
+        return '';                                 // Normal (green)
+      } else {
+        // Blyth: Normal 0.42-1.60m, Property flooding >1.80m
+        if (level >= 1.80) return 'status-bad';   // Flood risk
+        if (level > 1.60) return 'status-warn';   // Above normal
+        return '';                                 // Normal (green)
+      }
+    }
+
+    function updateChart(chartId, valueId, value, isWorksop, maxValue = 2.5) {
       const chart = document.getElementById(chartId);
+      const valueEl = document.getElementById(valueId);
       if (!chart) return;
       
       // Calculate percentage (cap at 100%)
       const percentage = Math.min((value / maxValue) * 100, 100);
+      
+      // Update color based on status
+      chart.className = 'chart-bar';
+      const statusClass = getStatusColor(value, isWorksop);
+      if (statusClass) {
+        chart.classList.add(statusClass);
+      }
+      
+      // Update value display
+      if (valueEl && Number.isFinite(value)) {
+        valueEl.textContent = value.toFixed(2) + ' m';
+      }
       
       // Animate height
       setTimeout(() => {
@@ -443,9 +484,9 @@
         l1.textContent = `Worksop: ${fmt(worksopLevel)} m`;
         l2.textContent = `Blyth: ${fmt(blythLevel)} m`;
         
-        // Update background charts
-        updateChart('chart1', worksopLevel || 0);
-        updateChart('chart2', blythLevel || 0);
+        // Update background charts with color coding
+        updateChart('chart1', 'chartVal1', worksopLevel || 0, true);
+        updateChart('chart2', 'chartVal2', blythLevel || 0, false);
         
         u.innerHTML = `Updated: ${safeTime(latestTime)} ·`;
       }
